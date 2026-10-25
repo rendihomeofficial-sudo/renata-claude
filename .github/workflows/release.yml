@@ -22,11 +22,26 @@ jobs:
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build Release APK
+      - name: Build / Siapkan Release APK
         run: |
-          cd renata-claude
-          chmod +x gradlew 2>/dev/null || true
-          gradle :app:assembleRelease --no-daemon
+          mkdir -p build_output
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          
+          # Jika berkas APK sudah ada di folder dist/ (hasil build lokal yang siap pakai)
+          if [ -f "dist/Renata-Claude-${VERSION}.apk" ]; then
+            echo "Menggunakan APK siap pakai dari dist/Renata-Claude-${VERSION}.apk"
+            cp "dist/Renata-Claude-${VERSION}.apk" "build_output/Renata-Claude-${VERSION}.apk"
+          elif [ -f "gradlew" ]; then
+            echo "Membangun APK menggunakan gradlew..."
+            chmod +x gradlew
+            ./gradlew :app:assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/*.apk "build_output/Renata-Claude-${VERSION}.apk"
+          else
+            echo "Membangun APK menggunakan gradle..."
+            gradle :app:assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/*.apk "build_output/Renata-Claude-${VERSION}.apk"
+          fi
 
       - name: Perbarui Tautan Unduhan di version.json
         run: |
@@ -35,14 +50,14 @@ jobs:
           REPO="${{ github.repository }}"
           DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG_NAME}/Renata-Claude-${VERSION}.apk"
           echo "Updating version.json with download URL: ${DOWNLOAD_URL}"
-          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"${DOWNLOAD_URL}\"|g" renata-claude/version.json
+          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"${DOWNLOAD_URL}\"|g" version.json
 
       - name: Buat GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            renata-claude/app/build/outputs/apk/release/app-release.apk
-            renata-claude/version.json
+            build_output/*.apk
+            version.json
           name: "Renata Claude ${{ github.ref_name }}"
           draft: false
           prerelease: false
