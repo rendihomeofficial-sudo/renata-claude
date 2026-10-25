@@ -22,8 +22,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.renata.claude.R
+import com.renata.claude.data.BiometricAuth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,10 +50,35 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LockScreen(
     onVerify: (String) -> Boolean,
+    onBiometricSuccess: () -> Unit = {},
     onOpenAppSettings: () -> Unit,
 ) {
+    val context = LocalContext.current
     var pin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    val hasBiometric = remember { BiometricAuth.canAuthenticate(context) }
+
+    fun triggerBiometric() {
+        if (!hasBiometric) return
+        BiometricAuth.promptBiometric(
+            activity = context,
+            onSuccess = {
+                error = null
+                onBiometricSuccess()
+            },
+            onError = { err ->
+                if (!err.contains("Dibatalkan", ignoreCase = true)) {
+                    error = err
+                }
+            }
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        if (hasBiometric) {
+            triggerBiometric()
+        }
+    }
 
     fun submit() {
         if (pin.length < 4) {
@@ -149,12 +178,28 @@ fun LockScreen(
                 },
             )
             Spacer(Modifier.height(18.dp))
-            Button(
-                onClick = { submit() },
-                enabled = pin.isNotEmpty(),
-                modifier = Modifier.widthIn(min = 180.dp),
-            ) {
-                Text("Buka")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = { submit() },
+                    enabled = pin.isNotEmpty(),
+                    modifier = Modifier.weight(1f, fill = false).widthIn(min = 140.dp),
+                ) {
+                    Text("Buka")
+                }
+                if (hasBiometric) {
+                    OutlinedButton(
+                        onClick = { triggerBiometric() },
+                        modifier = Modifier.height(40.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_fingerprint),
+                            contentDescription = "Buka dengan Sidik Jari",
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Sidik Jari")
+                    }
+                }
             }
             Spacer(Modifier.height(10.dp))
             TextButton(onClick = onOpenAppSettings) {

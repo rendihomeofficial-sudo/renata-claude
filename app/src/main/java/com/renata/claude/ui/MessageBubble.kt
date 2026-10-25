@@ -44,6 +44,7 @@ fun MessageBubble(
     message: Message,
     isStreaming: Boolean,
     onCopy: (String) -> Unit,
+    onShare: ((String) -> Unit)? = null,
     onRetry: (() -> Unit)?,
     onOpenCode: ((language: String?, code: String) -> Unit)? = null,
     onOpenLink: ((String) -> Unit)? = null,
@@ -112,6 +113,11 @@ fun MessageBubble(
             ) {
                 TextButton(onClick = { onCopy(message.text) }, enabled = message.text.isNotBlank()) {
                     Text("Salin")
+                }
+                if (onShare != null) {
+                    TextButton(onClick = { onShare(message.text) }, enabled = message.text.isNotBlank()) {
+                        Text("Bagikan")
+                    }
                 }
                 if (onRetry != null) {
                     TextButton(onClick = onRetry, enabled = !isStreaming) {

@@ -29,6 +29,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -86,10 +89,43 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
 
+    var showMenu by remember { mutableStateOf(false) }
+
     // Tautan pada jawaban dan daftar sumber dibuka di browser.
     val openLink: (String) -> Unit = { url ->
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
+    }
+
+    val shareText: (String) -> Unit = { text ->
+        runCatching {
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, text)
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, "Bagikan pesan")
+            context.startActivity(shareIntent)
+        }
+    }
+
+    val exportChat: (asMarkdown: Boolean) -> Unit = { asMarkdown ->
+        if (chat != null && chat.messages.isNotEmpty()) {
+            val content = if (asMarkdown) {
+                com.renata.claude.data.ChatExporter.toMarkdown(chat)
+            } else {
+                com.renata.claude.data.ChatExporter.toPlainText(chat)
+            }
+            val title = chat.title.ifBlank { "Percakapan" }
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_SUBJECT, title)
+                putExtra(Intent.EXTRA_TEXT, content)
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, "Ekspor / Bagikan: $title")
+            context.startActivity(shareIntent)
         }
     }
 
@@ -135,6 +171,32 @@ fun ChatScreen(
                     IconButton(onClick = onNewChat) {
                         Icon(Icons.Default.Add, contentDescription = "Percakapan baru")
                     }
+                    if (chat != null && chat.messages.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Opsi percakapan")
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Ekspor Markdown (.md)") },
+                                    onClick = {
+                                        showMenu = false
+                                        exportChat(true)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Ekspor Teks (.txt)") },
+                                    onClick = {
+                                        showMenu = false
+                                        exportChat(false)
+                                    },
+                                )
+                            }
+                        }
+                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Pengaturan")
                     }
@@ -166,6 +228,7 @@ fun ChatScreen(
                                 message = message,
                                 isStreaming = isStreaming && message.role == "assistant",
                                 onCopy = { clipboard.setText(AnnotatedString(it)) },
+                                onShare = shareText,
                                 onRetry = if (message.role == "assistant" && message == chat.messages.last()) {
                                     { onRegenerate() }
                                 } else {

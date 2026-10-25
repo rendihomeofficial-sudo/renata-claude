@@ -259,7 +259,14 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     // ada yang bisa diklik di belakang layar kunci.
     if (locked) {
         LockScreen(
-            onVerify = { pin -> LockPrefs.verify(pin) },
+            onVerify = { pin ->
+                val ok = LockPrefs.verify(pin)
+                if (ok) locked = false
+                ok
+            },
+            onBiometricSuccess = {
+                locked = false
+            },
             onOpenAppSettings = {
                 runCatching {
                     context.startActivity(
@@ -296,9 +303,28 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("Cari percakapan") },
+                        placeholder = { Text("Cari judul atau isi pesan…") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Cari",
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        trailingIcon = {
+                            if (query.isNotEmpty()) {
+                                IconButton(onClick = { query = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Hapus pencarian",
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
                     )
                     Spacer(Modifier.height(8.dp))
                     Surface(
@@ -321,22 +347,41 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                     }
                     Spacer(Modifier.height(10.dp))
                     HorizontalDivider()
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(filtered, key = { it.id }) { chat ->
-                            ChatRow(
-                                chat = chat,
-                                active = currentChat?.id == chat.id,
-                                onOpen = {
-                                    vm.openChat(chat.id)
-                                    scope.launch { drawerState.close() }
-                                },
-                                onRename = { renaming = chat },
-                                onDelete = { vm.deleteChat(chat.id) },
-                                onPin = { vm.togglePin(chat.id) },
+                    if (filtered.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = if (query.isNotBlank()) "Tidak ada percakapan yang cocok dengan \"$query\""
+                                else "Belum ada riwayat percakapan",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(filtered, key = { it.id }) { chat ->
+                                ChatRow(
+                                    chat = chat,
+                                    searchQuery = query,
+                                    active = currentChat?.id == chat.id,
+                                    onOpen = {
+                                        vm.openChat(chat.id)
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    onRename = { renaming = chat },
+                                    onDelete = { vm.deleteChat(chat.id) },
+                                    onPin = { vm.togglePin(chat.id) },
+                                )
+                            }
                         }
                     }
                     HorizontalDivider()
@@ -432,6 +477,7 @@ private const val LOCK_GRACE_MS = 30_000L
 @Composable
 private fun ChatRow(
     chat: Chat,
+    searchQuery: String = "",
     active: Boolean,
     onOpen: () -> Unit,
     onRename: () -> Unit,
@@ -477,12 +523,18 @@ private fun ChatRow(
                     )
                 }
             }
-            val preview = chat.messages.lastOrNull { it.text.isNotBlank() }?.text.orEmpty()
+            // Jika pengguna sedang mencari teks, cari potongan pesan yang cocok terlebih dahulu
+            val matchedMessage = if (searchQuery.isNotBlank()) {
+                chat.messages.firstOrNull { it.text.contains(searchQuery, ignoreCase = true) }?.text
+            } else null
+
+            val preview = (matchedMessage ?: chat.messages.lastOrNull { it.text.isNotBlank() }?.text).orEmpty()
             if (preview.isNotBlank()) {
                 Text(
                     text = preview.replace(Regex("\\s+"), " "),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (matchedMessage != null) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
             }
