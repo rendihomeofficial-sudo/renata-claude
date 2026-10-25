@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Latar krem hangat, bukan oranye, supaya ikon tidak mirip ikon aplikasi lain. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="6"
+                android:startY="0"
+                android:endX="102"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0" android:color="#FFFAF4EC" />
+                <item android:offset="0.55" android:color="#FFF3E7DA" />
+                <item android:offset="1" android:color="#FFE7D6C3" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="70"
+                android:centerY="26"
+                android:gradientRadius="58"
+                android:type="radial">
+                <item android:offset="0" android:color="#4DD97757" />
+                <item android:offset="1" android:color="#00D97757" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Logo splash: monogram "R" dengan pancaran bintang empat sudut, sama dengan
+  ikon peluncur. Semua bagian dijaga di dalam lingkaran aman (radius 33 dari
+  pusat viewport 108) supaya tidak terpotong oleh mask lingkaran Android 12+.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Batang dan mangkuk huruf R -->
+    <path
+        android:pathData="M40,74 L40,34 L51,34 A9.5,9.5 0 0 1 51,53 L40,53"
+        android:strokeColor="#FFC25734"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Kaki huruf R -->
+    <path
+        android:pathData="M51,53 L65,74"
+        android:strokeColor="#FFC25734"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Pancaran bintang empat sudut -->
+    <path
+        android:pathData="M65,30 C66,35 66.5,35.5 71.5,36.5 C66.5,37.5 66,38 65,43 C64,38 63.5,37.5 58.5,36.5 C63.5,35.5 64,35 65,30 Z"
+        android:fillColor="#FFC25734" />
+</vector>

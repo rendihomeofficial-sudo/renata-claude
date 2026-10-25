@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Android 12+ memakai splash screen sistem: warna latar, logo beranimasi,
+      lalu Compose mengambil alih lewat SplashScreen() di MainActivity.
+    -->
+    <style name="Theme.RenataClaude" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/claude_background</item>
+        <item name="android:windowSplashScreenBackground">@color/claude_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="android:windowSplashScreenAnimationDuration">400</item>
+    </style>
+</resources>

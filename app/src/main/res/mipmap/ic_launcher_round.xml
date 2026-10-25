@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ikon peluncur bulat untuk Android lama: monogram "R" dengan bintang, sama seperti ikon utama. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M54,4a50,50 0 1 0 0.1,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="10"
+                android:startY="4"
+                android:endX="98"
+                android:endY="104"
+                android:type="linear">
+                <item android:offset="0" android:color="#FFFFFBF5" />
+                <item android:offset="0.55" android:color="#FFF3E7DA" />
+                <item android:offset="1" android:color="#FFE0C9B2" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.18"
+        android:scaleY="1.18">
+        <path
+            android:pathData="M38,76 L38,32 L50,32 A10,10 0 0 1 50,52 L38,52"
+            android:strokeColor="#FFC25734"
+            android:strokeWidth="9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M50,52 L66,76"
+            android:strokeColor="#FFC25734"
+            android:strokeWidth="9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M66,28 C67,33.5 67.5,34 73,35 C67.5,36 67,36.5 66,42 C65,36.5 64.5,36 59,35 C64.5,34 65,33.5 66,28 Z"
+            android:fillColor="#FFC25734" />
+    </group>
+</vector>

@@ -1,0 +1,50 @@
+name: Rilis & Update Manifest Otomatis
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Siapkan Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Release APK
+        run: |
+          cd renata-claude
+          chmod +x gradlew 2>/dev/null || true
+          gradle :app:assembleRelease --no-daemon
+
+      - name: Perbarui Tautan Unduhan di version.json
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          REPO="${{ github.repository }}"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG_NAME}/Renata-Claude-${VERSION}.apk"
+          echo "Updating version.json with download URL: ${DOWNLOAD_URL}"
+          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"${DOWNLOAD_URL}\"|g" renata-claude/version.json
+
+      - name: Buat GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            renata-claude/app/build/outputs/apk/release/app-release.apk
+            renata-claude/version.json
+          name: "Renata Claude ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
