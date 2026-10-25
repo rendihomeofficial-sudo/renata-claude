@@ -23,27 +23,27 @@ jobs:
 
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
 
-      - name: Build / Siapkan Release APK
+      - name: Build Release APK dari Kode Sumber
         run: |
           mkdir -p build_output
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
           
-          # Jika berkas APK sudah ada di folder dist/ (hasil build lokal yang siap pakai)
-          if [ -f "dist/Renata-Claude-${VERSION}.apk" ]; then
-            echo "Menggunakan APK siap pakai dari dist/Renata-Claude-${VERSION}.apk"
-            cp "dist/Renata-Claude-${VERSION}.apk" "build_output/Renata-Claude-${VERSION}.apk"
-          elif [ -f "gradlew" ]; then
-            echo "Membangun APK menggunakan gradlew..."
-            chmod +x gradlew
-            ./gradlew :app:assembleRelease --no-daemon
-            cp app/build/outputs/apk/release/*.apk "build_output/Renata-Claude-${VERSION}.apk"
-          else
-            echo "Membangun APK menggunakan gradle..."
-            gradle :app:assembleRelease --no-daemon
-            cp app/build/outputs/apk/release/*.apk "build_output/Renata-Claude-${VERSION}.apk"
+          echo "Membangun APK release resmi versi ${VERSION} dari source code..."
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          
+          APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "Error: Berkas APK tidak ditemukan setelah build!"
+            exit 1
           fi
+          
+          echo "Ditemukan APK: $APK_FILE"
+          cp "$APK_FILE" "build_output/Renata-Claude-${VERSION}.apk"
+          ls -la build_output/
 
       - name: Perbarui Tautan Unduhan di version.json
         run: |
