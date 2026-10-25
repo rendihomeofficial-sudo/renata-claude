@@ -1,7 +1,7 @@
 {
-  "versionName": "1.3.1",
-  "versionCode": 5,
+  "versionName": "1.3.2",
+  "versionCode": 6,
   "downloadUrl": "https://github.com/rendihomeofficial-sudo/renata-claude/releases/download/v1.3.1/Renata-Claude-1.3.1.apk",
-  "releaseNotes": "Ekspor percakapan ke berkas Markdown (.md) dan teks biasa (.txt), tombol Bagikan pesan jawaban AI ke aplikasi lain, buka kunci dengan sensor sidik jari (BiometricPrompt), dan pencarian mendalam judul serta isi riwayat percakapan.",
+  "releaseNotes": "Simulasi pembaruan ke versi 1.3.2: Pengujian pop-up otomatis pembaruan aplikasi dan unduhan rilis terbaru.",
   "publishedAt": "2026-10-26"
 }
