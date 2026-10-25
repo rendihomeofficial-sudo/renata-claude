@@ -21,6 +21,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Siapkan Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -32,8 +35,10 @@ jobs:
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
           
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          
           echo "Membangun APK release resmi versi ${VERSION} dari source code..."
-          gradle :app:assembleRelease --no-daemon --stacktrace
+          gradle :app:assembleRelease --no-daemon
           
           APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then
