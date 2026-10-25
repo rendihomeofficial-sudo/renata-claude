@@ -130,18 +130,28 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             }
             return
         }
-        updateState = UpdateUiState.Checking
+        if (manual) {
+            updateState = UpdateUiState.Checking
+        }
         scope.launch {
-            updateState = try {
+            try {
                 val release = UpdateChecker.fetchRelease(url)
                 UpdatePrefs.markChecked(context)
                 if (release.isNewerThan(BuildConfig.VERSION_CODE)) {
-                    UpdateUiState.Available(release)
+                    // Selalu tampilkan dialog popup jika versi baru tersedia!
+                    updateState = UpdateUiState.Available(release)
+                } else if (manual) {
+                    updateState = UpdateUiState.UpToDate(release)
                 } else {
-                    UpdateUiState.UpToDate(release)
+                    updateState = UpdateUiState.Idle
                 }
             } catch (e: Exception) {
-                UpdateUiState.Failed(e.message ?: "Gagal memeriksa pembaruan.")
+                if (manual) {
+                    updateState = UpdateUiState.Failed(e.message ?: "Gagal memeriksa pembaruan.")
+                } else {
+                    // Diamkan jika pengecekan latar belakang gagal agar tidak mengganggu pengguna
+                    updateState = UpdateUiState.Idle
+                }
             }
         }
     }
