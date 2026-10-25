@@ -32,7 +32,17 @@ jobs:
           
           chmod +x ./gradlew
           echo "Membangun APK release resmi versi ${VERSION} dari source code..."
-          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+          
+          # Catat log ke berkas agar bila terjadi error bisa langsung ditampilkan
+          set +e
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace > build.log 2>&1
+          STATUS=$?
+          if [ $STATUS -ne 0 ]; then
+            echo "========== LOG ERROR LENGKAP GRADLE BUILD =========="
+            cat build.log | tail -n 120
+            exit $STATUS
+          fi
+          set -e
           
           APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then
