@@ -23,8 +23,6 @@ jobs:
 
       - name: Siapkan Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
 
       - name: Build Release APK dari Kode Sumber
         run: |
@@ -32,23 +30,9 @@ jobs:
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
           
-          # Konfigurasi Android SDK bawaan runner Ubuntu
-          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          
-          echo "Menerima lisensi Android SDK..."
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          
+          chmod +x ./gradlew
           echo "Membangun APK release resmi versi ${VERSION} dari source code..."
-          set +e
-          gradle :app:assembleRelease --no-daemon --stacktrace > build.log 2>&1
-          STATUS=$?
-          if [ $STATUS -ne 0 ]; then
-            echo "Build GAGAL! Berikut log error-nya:"
-            tail -n 80 build.log
-            exit $STATUS
-          fi
-          set -e
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
           
           APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then
