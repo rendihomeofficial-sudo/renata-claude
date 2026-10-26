@@ -3,8 +3,6 @@ package com.renata.claude.data
 import android.content.Context
 import android.os.Build
 import androidx.core.hardware.fingerprint.FingerprintManagerCompat
-import androidx.fragment.app.FragmentActivity
-import java.util.concurrent.Executor
 
 /** Status ketersediaan perangkat keras dan data biometrik/sidik jari pada perangkat. */
 object BiometricAuth {

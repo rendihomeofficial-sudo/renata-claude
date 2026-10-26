@@ -23,8 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -56,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -456,17 +459,6 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         }
     }
 
-    renaming?.let { chat ->
-        RenameDialog(
-            chat = chat,
-            onDismiss = { renaming = null },
-            onConfirm = { title ->
-                vm.renameChat(chat.id, title)
-                renaming = null
-            },
-        )
-    }
-
     if (updateState !is UpdateUiState.Idle) {
         UpdateDialog(
             state = updateState,
@@ -476,6 +468,17 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
             onInstall = { installApk(it) },
             onOpenInstallPermission = { openInstallPermission() },
             onRetry = { checkUpdate(manual = true) },
+        )
+    }
+
+    renaming?.let { chat ->
+        RenameDialog(
+            chat = chat,
+            onDismiss = { renaming = null },
+            onConfirm = { title ->
+                vm.renameChat(chat.id, title)
+                renaming = null
+            },
         )
     }
 

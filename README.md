@@ -140,22 +140,22 @@ gradle :app:assembleRelease
 
 - APK debug: `app/build/outputs/apk/debug/app-debug.apk`
 - APK rilis: `app/build/outputs/apk/release/app-release.apk`
-- APK rilis siap pasang: `dist/Renata-Claude-1.3.0.apk`
+- APK rilis siap pasang: `dist/Renata-Claude-1.3.2.apk`
 
 ### Keystore & Signature
 
 Signing config rilis memakai keystore `keystore/renata-claude.jks` (alias `renata`).
 
 ```
-package        : com.renata.claude   versionCode 4   versionName 1.3.0
+package        : com.renata.claude   versionCode 6   versionName 1.3.2
 minSdk / target: 24 / 34
 label          : Renata Claude
 signature      : v2 (RSA 2048, CN=Renata Claude), 1 signer
-sha256         : c21208f46feb4e835c599805373a5473cbd3de9d804e85aac6ad70116abdb770
+sha256         : 93f5a8973dd13c1331534e50a794f9da374668311c57acafe88b5ba6484061ae
 ```
 
 APK ini ditandatangani dengan keystore yang sama persis dengan versi sebelumnya, sehingga
-bisa langsung diperbarui di atas versi 1.0.0, 1.1.0, maupun 1.2.0 tanpa kehilangan data.
+bisa langsung diperbarui di atas versi 1.0.0, 1.1.0, 1.2.0, 1.3.0, maupun 1.3.1 tanpa kehilangan data.
 
 ## Verifikasi Pengujian (Unit Tests)
 

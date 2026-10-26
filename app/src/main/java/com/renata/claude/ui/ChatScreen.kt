@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -36,8 +38,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,10 +59,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.renata.claude.R
@@ -266,36 +273,55 @@ private fun EmptyState(onSuggestion: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Renata Claude", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(6.dp))
+        Icon(
+            painter = painterResource(R.drawable.ic_splash_logo),
+            contentDescription = "Claude Logo",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(54.dp),
+        )
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = "Claude Anda sendiri. Kunci Anda sendiri. Server Anda sendiri. Tanpa akun, tanpa batas.",
+            text = "Selamat datang di Claude",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontFamily = FontFamily.Serif,
+                fontWeight = FontWeight.Normal,
+            ),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Kunci Anda sendiri. Server Anda sendiri. Tanpa batas percakapan.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(28.dp))
         listOf(
             "Jelaskan apa yang dilakukan aplikasi ini dengan sederhana.",
-            "Buat unit test untuk fungsi Kotlin saya.",
-            "Tulis email tindak lanjut yang sopan.",
+            "Bantu buat kode atau perbaiki algoritma saya.",
+            "Tulis draf pesan atau email yang profesional.",
         ).forEach { suggestion ->
             Surface(
                 onClick = { onSuggestion(suggestion) },
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 1.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(16.dp),
+                    ),
             ) {
                 Text(
                     text = suggestion,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 )
             }
         }
@@ -319,7 +345,7 @@ private fun Composer(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {
         if (pending.isNotEmpty()) {
             Row(
@@ -354,18 +380,29 @@ private fun Composer(
             Spacer(Modifier.height(6.dp))
         }
         Surface(
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(26.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 2.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+                    shape = RoundedCornerShape(26.dp),
+                ),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 4.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                    .padding(start = 6.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 IconButton(onClick = onAttach, enabled = !isStreaming) {
-                    Icon(Icons.Default.Add, contentDescription = "Lampirkan berkas")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Lampirkan berkas",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 IconButton(
                     onClick = onVoiceClick,
@@ -381,9 +418,13 @@ private fun Composer(
                     value = input,
                     onValueChange = onInputChange,
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Tulis pesan untuk Renata Claude…") },
+                    placeholder = { Text("Tanya Claude apa saja…", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)) },
                     maxLines = 6,
-                    shape = RoundedCornerShape(20.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent,
+                    ),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         imeAction = if (sendOnEnter) ImeAction.Send else ImeAction.Default,
                     ),
@@ -393,15 +434,30 @@ private fun Composer(
                 )
                 Spacer(Modifier.width(4.dp))
                 if (isStreaming) {
-                    FilledIconButton(onClick = onStop) {
+                    FilledIconButton(
+                        onClick = onStop,
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    ) {
                         Icon(Icons.Default.Close, contentDescription = "Hentikan")
                     }
                 } else {
+                    val canSend = input.isNotBlank() || pending.isNotEmpty()
                     FilledIconButton(
                         onClick = onSend,
-                        enabled = input.isNotBlank() || pending.isNotEmpty(),
+                        enabled = canSend,
+                        shape = CircleShape,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        ),
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Kirim")
+                        Icon(Icons.Default.Send, contentDescription = "Kirim", modifier = Modifier.size(18.dp))
                     }
                 }
             }

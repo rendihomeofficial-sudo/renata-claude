@@ -15,7 +15,7 @@ set OWNER=%~1
 set REPO=%~2
 
 set MANIFEST_RAW_URL=https://raw.githubusercontent.com/%OWNER%/%REPO%/main/version.json
-set RELEASE_APK_URL=https://github.com/%OWNER%/%REPO%/releases/download/v1.3.0/Renata-Claude-1.3.0.apk
+set RELEASE_APK_URL=https://github.com/%OWNER%/%REPO%/releases/download/v1.3.2/Renata-Claude-1.3.2.apk
 
 echo =================================================================
 echo Menyiapkan konfigurasi update otomatis...
@@ -36,15 +36,15 @@ git remote add origin https://github.com/%OWNER%/%REPO%.git
 
 echo Menambahkan berkas ke git...
 git add .
-git commit -m "Rilis v1.3.0: multi-provider, alat lokal, kunci aplikasi, dan auto-update" 2>nul
-git tag -f v1.3.0
+git commit -m "Rilis v1.3.2: tampilan baru khas Claude dengan indikator berpikir & kursor streaming" 2>nul
+git tag -f v1.3.2
 
 echo =================================================================
 echo Siap untuk diunggah ke GitHub!
 echo Jalankan 2 perintah berikut:
 echo.
 echo    git push -u origin main --force
-echo    git push origin v1.3.0 --force
+echo    git push origin v1.3.2 --force
 echo.
 echo =================================================================
 goto end
