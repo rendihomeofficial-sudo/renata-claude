@@ -398,8 +398,9 @@ fun SettingsScreen(
                 label = { Text("URL manifest pembaruan") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("https://raw.githubusercontent.com/rendihomeofficial-sudo/renata-claude/main/version.json") },
                 supportingText = {
-                    Text("Tautan langsung ke berkas version.json, contoh https://raw.githubusercontent.com/owner/repo/main/version.json")
+                    Text("Tautan langsung ke berkas version.json resmi di GitHub")
                 },
             )
             Spacer(Modifier.height(8.dp))
