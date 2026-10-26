@@ -26,10 +26,11 @@ jobs:
 
       - name: Build / Siapkan Release APK
         run: |
+          set -euo pipefail
           mkdir -p build_output
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
-          
+
           # Jika berkas APK sudah ada di folder dist/ (hasil build lokal yang siap pakai)
           if [ -f "dist/Renata-Claude-${VERSION}.apk" ]; then
             echo "Menggunakan APK siap pakai dari dist/Renata-Claude-${VERSION}.apk"
@@ -40,16 +41,45 @@ jobs:
             ./gradlew :app:assembleRelease --no-daemon
             APK_FILE=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
             cp "$APK_FILE" "build_output/Renata-Claude-${VERSION}.apk"
+          else
+            echo "Tidak ada APK siap pakai maupun gradlew." >&2
+            exit 1
           fi
 
-      - name: Perbarui Tautan Unduhan di version.json
+      - name: Susun manifest rilis (version.json)
         run: |
+          set -euo pipefail
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
           REPO="${{ github.repository }}"
           DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG_NAME}/Renata-Claude-${VERSION}.apk"
-          echo "Updating version.json with download URL: ${DOWNLOAD_URL}"
-          sed -i "s|\"downloadUrl\": \".*\"|\"downloadUrl\": \"${DOWNLOAD_URL}\"|g" version.json
+          VERSION_CODE=$(grep -oP 'versionCode\s*=\s*\K[0-9]+' app/build.gradle.kts | head -n 1)
+          if [ -z "${VERSION_CODE}" ]; then
+            echo "versionCode tidak ditemukan di app/build.gradle.kts" >&2
+            exit 1
+          fi
+          python3 - "$VERSION" "$VERSION_CODE" "$DOWNLOAD_URL" <<'PY'
+          import datetime, json, sys
+          version, code, url = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          notes = ""
+          try:
+              with open("version.json", encoding="utf-8") as handle:
+                  notes = json.load(handle).get("releaseNotes", "")
+          except Exception:
+              pass
+          data = {
+              "versionName": version,
+              "versionCode": code,
+              "downloadUrl": url,
+              "releaseNotes": notes,
+              "publishedAt": datetime.date.today().isoformat(),
+          }
+          with open("version.json", "w", encoding="utf-8") as handle:
+              json.dump(data, handle, indent=2, ensure_ascii=False)
+              handle.write("\n")
+          PY
+          cp version.json "${RUNNER_TEMP}/release-version.json"
+          echo "Manifest rilis disusun: v${VERSION} (versionCode ${VERSION_CODE})"
 
       - name: Buat GitHub Release
         uses: softprops/action-gh-release@v2
@@ -62,3 +92,21 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Terbitkan manifest pembaruan di branch main
+        run: |
+          set -euo pipefail
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --force origin "+refs/heads/main:refs/remotes/origin/main"
+          git checkout -f -B manifest-release refs/remotes/origin/main
+          cp "${RUNNER_TEMP}/release-version.json" version.json
+          git add version.json
+          if git diff --cached --quiet; then
+            echo "Manifest di branch main sudah versi ${VERSION}, tidak ada perubahan."
+          else
+            git commit -m "chore(release): manifest pembaruan v${VERSION}"
+            git push origin HEAD:main
+          fi

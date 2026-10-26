@@ -1,7 +1,7 @@
 {
-  "versionName": "1.3.2",
-  "versionCode": 6,
-  "downloadUrl": "https://github.com/rendihomeofficial-sudo/renata-claude/releases/download/v1.3.2/Renata-Claude-1.3.2.apk",
-  "releaseNotes": "Tampilan baru khas Claude: kartu jawaban dengan sudut asimetris, indikator bintang berkedip saat model berpikir, kursor streaming, serta tampilan awal dan kotak pesan yang lebih rapi.",
+  "versionName": "1.3.3",
+  "versionCode": 7,
+  "downloadUrl": "https://github.com/rendihomeofficial-sudo/renata-claude/releases/download/v1.3.3/Renata-Claude-1.3.3.apk",
+  "releaseNotes": "Alur rilis otomatis yang lebih rapi: setiap tag baru otomatis membuat GitHub Release dan memperbarui manifest pembaruan di branch main, sehingga aplikasi langsung mendeteksi versi terbaru saat dibuka.",
   "publishedAt": "2026-10-26"
 }
