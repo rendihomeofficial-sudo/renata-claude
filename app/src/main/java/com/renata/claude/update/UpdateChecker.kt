@@ -22,7 +22,12 @@ object UpdateChecker {
 
     /** Membaca manifest pembaruan dari [manifestUrl]. */
     suspend fun fetchRelease(manifestUrl: String): AppRelease = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url(manifestUrl).get().build()
+        val request = Request.Builder()
+            .url(manifestUrl)
+            .header("Cache-Control", "no-cache, no-store")
+            .header("Pragma", "no-cache")
+            .get()
+            .build()
         client.newCall(request).execute().use { response ->
             val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) {

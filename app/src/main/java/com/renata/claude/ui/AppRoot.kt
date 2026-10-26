@@ -116,7 +116,11 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     }
 
     fun manifestUrl(): String =
-        settings.updateManifestUrl.ifBlank { BuildConfig.UPDATE_MANIFEST_URL }.trim()
+        settings.updateManifestUrl.ifBlank {
+            BuildConfig.UPDATE_MANIFEST_URL.ifBlank {
+                "https://raw.githubusercontent.com/rendihomeofficial-sudo/renata-claude/main/version.json"
+            }
+        }.trim()
 
     fun checkUpdate(manual: Boolean) {
         val url = manifestUrl()
