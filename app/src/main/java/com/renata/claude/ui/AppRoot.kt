@@ -211,11 +211,9 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         vm.dismissNotice()
     }
 
-    // Automatic update check, at most once a day.
+    // Pemeriksaan pembaruan otomatis setiap kali aplikasi dibuka.
     LaunchedEffect(Unit) {
-        if (UpdatePrefs.shouldCheckAutomatically(context)) {
-            checkUpdate(manual = false)
-        }
+        checkUpdate(manual = false)
     }
 
     LaunchedEffect(updateState) {
