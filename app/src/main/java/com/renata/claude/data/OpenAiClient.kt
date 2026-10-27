@@ -145,6 +145,11 @@ object OpenAiClient {
             if (effort != null && MiniMaxSupport.supportsEffort(settings.model)) {
                 body.put("reasoning_effort", effort)
             }
+            // Keeps the thinking inside `reasoning_content` instead of
+            // `content`, where it would show up as `<think>` tags.
+            if (MiniMaxSupport.reasoningSplit(settings)) {
+                body.put("reasoning_split", true)
+            }
         }
         val messages = JSONArray()
         val systemPrompt = MiniMaxSupport.systemPromptFor(settings, tools.isNotEmpty())

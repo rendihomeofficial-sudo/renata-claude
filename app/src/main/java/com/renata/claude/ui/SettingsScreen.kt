@@ -16,7 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.renata.claude.BuildConfig
 import com.renata.claude.data.AiClient
 import com.renata.claude.data.AppSettings
 import com.renata.claude.data.LockPrefs
@@ -209,6 +213,15 @@ fun SettingsScreen(
             }
 
             SectionTitle("Model")
+            val suggestedModels = Providers.modelsFor(settings.providerId)
+            if (suggestedModels.isNotEmpty()) {
+                ModelDropdown(
+                    models = suggestedModels,
+                    selected = settings.model,
+                    onSelect = { model -> onChange { it.copy(model = model) } },
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             OutlinedTextField(
                 value = settings.model,
                 onValueChange = { value -> onChange { it.copy(model = value) } },
@@ -444,6 +457,18 @@ fun SettingsScreen(
             )
 
             SectionTitle("Pembaruan")
+            Text(
+                text = "Versi terpasang: ${BuildConfig.VERSION_NAME} (kode ${BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Pemeriksaan otomatis berjalan setiap kali aplikasi dibuka dan " +
+                    "diulang setiap kali aplikasi kembali aktif.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = settings.updateManifestUrl,
                 onValueChange = { value -> onChange { it.copy(updateManifestUrl = value.trim()) } },
@@ -575,6 +600,57 @@ private fun PinSetupDialog(
             TextButton(onClick = onDismiss) { Text("Batal") }
         },
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelDropdown(
+    models: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Pilih model") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            models.forEach { model ->
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(model)
+                            val note = MiniMaxSupport.describe(model)
+                            if (note.isNotBlank()) {
+                                Text(
+                                    text = note,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(model)
+                    },
+                )
+            }
+        }
+    }
 }
 
 @Composable

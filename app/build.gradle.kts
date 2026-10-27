@@ -12,15 +12,20 @@ android {
     val updateManifestUrl = ((project.findProperty("renata.updateManifestUrl") as String?) ?: "")
         .replace("\\", "\\\\")
         .replace("\"", "\\\"")
+    // Cermin cadangan dipakai kalau URL utama tidak bisa dijangkau jaringan.
+    val updateManifestFallbackUrls = ((project.findProperty("renata.updateManifestFallbackUrls") as String?) ?: "")
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
 
     defaultConfig {
         applicationId = "com.renata.claude"
         minSdk = 24
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.3.4"
+        versionCode = 9
+        versionName = "1.3.5"
         vectorDrawables { useSupportLibrary = true }
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"$updateManifestUrl\"")
+        buildConfigField("String", "UPDATE_MANIFEST_FALLBACK_URLS", "\"$updateManifestFallbackUrls\"")
     }
 
     signingConfigs {

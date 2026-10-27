@@ -308,6 +308,7 @@ class ProviderBodyTest {
         assertFalse(body.has("top_p"))
         assertEquals("adaptive", body.getJSONObject("thinking").getString("type"))
         assertEquals("high", body.getString("reasoning_effort"))
+        assertTrue("thinking harus dipisah dari jawaban", body.getBoolean("reasoning_split"))
         val system = body.getJSONArray("messages").getJSONObject(0)
         assertEquals("system", system.getString("role"))
         assertTrue(system.getString("content").contains("asisten AI profesional"))
@@ -344,6 +345,30 @@ class ProviderBodyTest {
         )
         assertEquals("disabled", body.getJSONObject("thinking").getString("type"))
         assertFalse(body.has("reasoning_effort"))
+        assertTrue(body.getBoolean("reasoning_split"))
+    }
+
+    @Test
+    fun miniMaxOpenAiBodySplitsTheThinkingForTheOlderModelToo() {
+        val body = OpenAiClient.buildBody(
+            chat = chatWith(Message(role = "user", text = "halo")),
+            settings = miniMaxSettings(model = "MiniMax-M3", thinking = true),
+            stream = true,
+        )
+        assertTrue(body.getBoolean("reasoning_split"))
+        assertFalse("hanya M3.1-Flash yang menerima kedalaman", body.has("reasoning_effort"))
+    }
+
+    @Test
+    fun otherProvidersNeverGetTheMiniMaxParameters() {
+        val body = OpenAiClient.buildBody(
+            chat = chatWith(Message(role = "user", text = "halo")),
+            settings = settings,
+            stream = true,
+        )
+        assertFalse(body.has("reasoning_split"))
+        assertFalse(body.has("reasoning_effort"))
+        assertFalse(body.has("thinking"))
     }
 
     @Test
@@ -364,6 +389,7 @@ class ProviderBodyTest {
         )
         assertEquals("high", body.getJSONObject("output_config").getString("effort"))
         assertEquals("adaptive", body.getJSONObject("thinking").getString("type"))
+        assertFalse("format Anthropic tidak memakai reasoning_split", body.has("reasoning_split"))
         assertTrue(body.getInt("max_tokens") >= 8192)
         val blocks = body.getJSONArray("messages").getJSONObject(1).getJSONArray("content")
         assertEquals("thinking", blocks.getJSONObject(0).getString("type"))

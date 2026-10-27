@@ -50,7 +50,7 @@ object Providers {
             baseUrl = "https://api.minimax.io/anthropic",
             apiFormat = FORMAT_ANTHROPIC,
             authStyle = AUTH_BOTH,
-            models = listOf("MiniMax-M3.1-Flash", "MiniMax-M3"),
+            models = MiniMaxSupport.availableModels,
             keyHint = "Kunci API MiniMax dari platform.minimax.io",
         ),
         ProviderPreset(
@@ -59,7 +59,7 @@ object Providers {
             baseUrl = "https://api.minimax.io/v1",
             apiFormat = FORMAT_OPENAI,
             authStyle = AUTH_BEARER,
-            models = listOf("MiniMax-M3.1-Flash", "MiniMax-M3", "MiniMax-M2.7", "MiniMax-M2.5"),
+            models = MiniMaxSupport.availableModels,
             keyHint = "Kunci API MiniMax dari platform.minimax.io",
         ),
         ProviderPreset(
@@ -128,6 +128,9 @@ object Providers {
     )
 
     fun byId(id: String): ProviderPreset? = presets.firstOrNull { it.id == id }
+
+    /** The models offered by a provider, newest first. */
+    fun modelsFor(id: String): List<String> = byId(id)?.models.orEmpty()
 
     fun labelOf(id: String): String = byId(id)?.label ?: "Kustom"
 }

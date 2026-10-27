@@ -10,12 +10,13 @@ object UpdatePrefs {
 
     private const val PREFS = "renata_claude_updates"
     private const val KEY_LAST_CHECK = "lastCheckAt"
-    // Ambang batas 0ms agar selalu memeriksa pembaruan otomatis setiap kali aplikasi dibuka
-    private const val DEFAULT_INTERVAL_MS = 0L
+    // Jeda minimum antar pemeriksaan agar aplikasi yang sering dibuka ke recents
+    // tidak membanjiri server manifest.
+    private const val DEFAULT_INTERVAL_MS = 5 * 60 * 1000L
 
     fun shouldCheckAutomatically(context: Context, now: Long = System.currentTimeMillis()): Boolean {
-        // Selalu true supaya aplikasi memeriksa manifest rilis setiap kali dibuka
-        return true
+        val last = prefs(context).getLong(KEY_LAST_CHECK, 0L)
+        return last <= 0L || now - last >= DEFAULT_INTERVAL_MS
     }
 
     fun markChecked(context: Context, now: Long = System.currentTimeMillis()) {

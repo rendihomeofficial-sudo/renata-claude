@@ -96,6 +96,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
     var updateState by remember { mutableStateOf<UpdateUiState>(UpdateUiState.Idle) }
     var canInstall by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val view = LocalView.current
 
     // Kunci aplikasi: buka aplikasi lagi setelah ditinggalkan beberapa waktu.
     var hasPin by remember { mutableStateOf(LockPrefs.hasPin()) }
@@ -118,16 +119,19 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         if (granted) showLiveVoice = true else micPermission.launch(Manifest.permission.RECORD_AUDIO)
     }
 
-    fun manifestUrl(): String =
-        settings.updateManifestUrl.ifBlank {
-            BuildConfig.UPDATE_MANIFEST_URL.ifBlank {
-                "https://raw.githubusercontent.com/rendihomeofficial-sudo/renata-claude/main/version.json"
-            }
-        }.trim()
+    /**
+     * Daftar URL manifest yang dicoba berurutan: URL kustom pengguna, URL bawaan
+     * dari build, lalu cermin cadangan. URL pertama yang berhasil dipakai.
+     */
+    fun manifestUrls(): List<String> = UpdateChecker.buildManifestUrls(
+        custom = settings.updateManifestUrl,
+        builtIn = BuildConfig.UPDATE_MANIFEST_URL,
+        fallbackCsv = BuildConfig.UPDATE_MANIFEST_FALLBACK_URLS,
+    )
 
     fun checkUpdate(manual: Boolean) {
-        val url = manifestUrl()
-        if (url.isBlank()) {
+        val urls = manifestUrls()
+        if (urls.isEmpty()) {
             if (manual) {
                 scope.launch {
                     snackbarHostState.showSnackbar(
@@ -142,7 +146,7 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         }
         scope.launch {
             try {
-                val release = UpdateChecker.fetchRelease(url)
+                val release = UpdateChecker.fetchReleaseFromAny(urls)
                 UpdatePrefs.markChecked(context)
                 if (release.isNewerThan(BuildConfig.VERSION_CODE)) {
                     // Selalu tampilkan dialog popup jika versi baru tersedia!
@@ -156,8 +160,11 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
                 if (manual) {
                     updateState = UpdateUiState.Failed(e.message ?: "Gagal memeriksa pembaruan.")
                 } else {
-                    // Diamkan jika pengecekan latar belakang gagal agar tidak mengganggu pengguna
+                    // Kegagalan latar belakang tetap diberi tahu lewat snackbar supaya
+                    // pengguna tahu kenapa dialog pembaruan tidak muncul.
                     updateState = UpdateUiState.Idle
+                    val message = e.message ?: "Gagal memeriksa pembaruan."
+                    snackbarHostState.showSnackbar("Pemeriksaan pembaruan otomatis gagal: $message")
                 }
             }
         }
@@ -223,8 +230,23 @@ fun AppRoot(vm: AppViewModel = viewModel()) {
         canInstall = ApkInstaller.canRequestInstall(context)
     }
 
+    // Aplikasi yang sudah terbuka saat rilis baru terbit tidak menjalankan
+    // LaunchedEffect(Unit) lagi, jadi pemeriksaan diulang setiap kali aplikasi
+    // kembali ke depan. Jeda minimum di UpdatePrefs mencegah permintaan berlebihan.
+    DisposableEffect(view) {
+        val owner = view.findViewTreeLifecycleOwner()
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                if (UpdatePrefs.shouldCheckAutomatically(context)) {
+                    checkUpdate(manual = false)
+                }
+            }
+        }
+        owner?.lifecycle?.addObserver(observer)
+        onDispose { owner?.lifecycle?.removeObserver(observer) }
+    }
+
     // Izin pasang aplikasi bisa berubah di Pengaturan sistem, jadi dicek lagi saat kembali.
-    val view = LocalView.current
     DisposableEffect(view) {
         val owner = view.findViewTreeLifecycleOwner()
         val observer = LifecycleEventObserver { _, event ->

@@ -17,6 +17,36 @@ object MiniMaxSupport {
     /** "Don't send a depth, let the provider use its own default (max)." */
     const val EFFORT_AUTO = "auto"
 
+    /**
+     * The models MiniMax serves today.
+     *
+     * The whole M2.x line has been retired, so the API only answers for these
+     * two. The newest one comes first because the dropdown offers them in
+     * that order.
+     */
+    const val MODEL_M31_FLASH = "MiniMax-M3.1-Flash"
+    const val MODEL_M3 = "MiniMax-M3"
+
+    /** Every model the MiniMax API accepts, newest first. */
+    val availableModels: List<String> = listOf(MODEL_M31_FLASH, MODEL_M3)
+
+    /**
+     * A short note about a model, shown next to its name in the dropdown.
+     *
+     * It tells the user what the model is good at, so the newest model is
+     * not just another line in a list.
+     */
+    fun describe(model: String): String {
+        val m = model.trim().lowercase()
+        return when {
+            m == MODEL_M31_FLASH.lowercase() ->
+                "Konteks 1 juta token, multimodal, kedalaman berpikir yang bisa diatur"
+            m == MODEL_M3.lowercase() ->
+                "Konteks 1 juta token, multimodal"
+            else -> ""
+        }
+    }
+
     /** Thinking depths accepted by MiniMax, from the cheapest to the deepest. */
     val effortLevels = listOf(EFFORT_AUTO, "low", "medium", "high", "xhigh", "max")
 
@@ -34,6 +64,15 @@ object MiniMaxSupport {
     fun isMiniMax(model: String): Boolean = model.trim().lowercase().startsWith("minimax")
 
     /**
+     * True when the model is one of the models MiniMax still serves.
+     *
+     * The retired M2.x models are not in the list, so they never show up in
+     * the dropdown and they do not get the parameters of the new models.
+     */
+    fun isSupportedModel(model: String): Boolean =
+        availableModels.any { it.equals(model.trim(), ignoreCase = true) }
+
+    /**
      * True when the model accepts a thinking depth.
      *
      * Only the MiniMax-M3.1 family reads `effort` / `reasoning_effort`; the
@@ -41,7 +80,7 @@ object MiniMaxSupport {
      */
     fun supportsEffort(model: String): Boolean {
         val m = model.trim().lowercase()
-        return m.startsWith("minimax-m3.1") || m.contains("m3.1-flash")
+        return m == MODEL_M31_FLASH.lowercase() || m.contains("m3.1-flash")
     }
 
     /** True for the MiniMax-M2 family. */
@@ -92,6 +131,19 @@ object MiniMaxSupport {
     }
 
     private fun adaptive(): JSONObject = JSONObject().put("type", "adaptive")
+
+    /**
+     * True when the thinking content has to be split from the answer.
+     *
+     * In the OpenAI format MiniMax can put the thinking inside `content`,
+     * wrapped in `<think>` tags. `reasoning_split: true` keeps it in
+     * `reasoning_content` instead, where the app reads it. The switch only
+     * exists for the models that are still served.
+     */
+    fun reasoningSplit(settings: AppSettings): Boolean =
+        settings.apiFormat == Providers.FORMAT_OPENAI &&
+            isMiniMax(settings.model) &&
+            isSupportedModel(settings.model)
 
     /** True when the request will make the model think. */
     fun thinkingActive(settings: AppSettings): Boolean {

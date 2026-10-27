@@ -100,6 +100,49 @@ class MiniMaxSupportTest {
         assertNull(MiniMaxSupport.thinkingParam(anthropic("claude-sonnet-4-5", thinking = true)))
     }
 
+    // --- The served models --------------------------------------------------
+
+    @Test
+    fun theNewestModelComesFirst() {
+        assertEquals(MiniMaxSupport.MODEL_M31_FLASH, MiniMaxSupport.availableModels.first())
+        assertTrue(MiniMaxSupport.availableModels.contains(MiniMaxSupport.MODEL_M3))
+    }
+
+    @Test
+    fun theRetiredModelsAreNotOffered() {
+        assertFalse(MiniMaxSupport.isSupportedModel("MiniMax-M2.7"))
+        assertFalse(MiniMaxSupport.isSupportedModel("MiniMax-M2.5"))
+        assertTrue(MiniMaxSupport.isSupportedModel("MiniMax-M3.1-Flash"))
+        assertTrue(MiniMaxSupport.isSupportedModel("minimax-m3"))
+    }
+
+    @Test
+    fun everyMiniMaxPresetOffersTheNewestModelFirst() {
+        listOf("minimax-anthropic", "minimax-openai").forEach { id ->
+            val models = Providers.modelsFor(id)
+            assertEquals(MiniMaxSupport.MODEL_M31_FLASH, models.first())
+        }
+    }
+
+    // --- The split between thinking and answer ------------------------------
+
+    @Test
+    fun theThinkingIsSplitFromTheAnswerInTheOpenAiFormat() {
+        assertTrue(MiniMaxSupport.reasoningSplit(openAi("MiniMax-M3.1-Flash")))
+        assertTrue(MiniMaxSupport.reasoningSplit(openAi("MiniMax-M3")))
+    }
+
+    @Test
+    fun theAnthropicFormatNeedsNoSplit() {
+        assertFalse(MiniMaxSupport.reasoningSplit(anthropic("MiniMax-M3.1-Flash")))
+        assertFalse(MiniMaxSupport.reasoningSplit(anthropic("MiniMax-M3")))
+    }
+
+    @Test
+    fun otherProvidersAreNeverSplit() {
+        assertFalse(MiniMaxSupport.reasoningSplit(openAi("gpt-4.1")))
+    }
+
     // --- The token budget --------------------------------------------------
 
     @Test

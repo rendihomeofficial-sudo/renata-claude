@@ -39,6 +39,38 @@ object UpdateChecker {
     }
 
     /**
+     * Menyusun daftar URL manifest yang dicoba berurutan.
+     *
+     * Urutannya: URL kustom pengguna, URL bawaan dari build, lalu cermin cadangan
+     * yang dipisah koma. URL kosong dibuang dan duplikat dihapus.
+     */
+    fun buildManifestUrls(custom: String, builtIn: String, fallbackCsv: String): List<String> {
+        val mirrors = fallbackCsv.split(',').map { it.trim() }
+        return (listOf(custom.trim(), builtIn.trim()) + mirrors)
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+
+    /**
+     * Mencoba beberapa URL manifest satu per satu dan memakai hasil pertama yang berhasil.
+     *
+     * Dipakai karena `raw.githubusercontent.com` kadang tidak bisa dijangkau dari
+     * jaringan tertentu, sementara cermin lain (jsDelivr, GitHub Releases) tetap bisa.
+     */
+    suspend fun fetchReleaseFromAny(urls: List<String>): AppRelease {
+        var lastError: Throwable? = null
+        for (url in urls) {
+            if (url.isBlank()) continue
+            try {
+                return fetchRelease(url)
+            } catch (e: Exception) {
+                lastError = e
+            }
+        }
+        throw lastError ?: UpdateException("Tidak ada URL manifest yang bisa diakses.")
+    }
+
+    /**
      * Mengunduh APK ke [target] dan melaporkan progres 0..100 lewat [onProgress].
      */
     suspend fun downloadApk(
