@@ -45,6 +45,8 @@ data class Message(
     val role: String,
     val text: String = "",
     val thinking: String = "",
+    /** Signature of the thinking block, needed to send the reasoning chain back. */
+    val thinkingSignature: String = "",
     val attachments: List<Attachment> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val model: String? = null,
@@ -62,6 +64,7 @@ data class Message(
         put("role", role)
         put("text", text)
         put("thinking", thinking)
+        put("thinkingSignature", thinkingSignature)
         put("attachments", JSONArray().also { arr -> attachments.forEach { arr.put(it.toJson()) } })
         put("createdAt", createdAt)
         model?.let { put("model", it) }
@@ -72,6 +75,25 @@ data class Message(
         put("citations", JSONArray().also { arr -> citations.forEach { arr.put(it.toJson()) } })
     }
 
+    /**
+     * Adds the signature of a thinking block.
+     *
+     * The signature can arrive in one piece or in several pieces, and some
+     * providers send the whole signature again with the first delta. This
+     * keeps the stored value correct in every case.
+     */
+    fun withSignature(signature: String): Message {
+        if (signature.isEmpty()) return this
+        val current = thinkingSignature
+        val next = when {
+            current.isEmpty() -> signature
+            signature.startsWith(current) -> signature
+            current.endsWith(signature) -> current
+            else -> current + signature
+        }
+        return copy(thinkingSignature = next)
+    }
+
     companion object {
         fun fromJson(o: JSONObject): Message {
             val arr = o.optJSONArray("attachments") ?: JSONArray()
@@ -80,6 +102,7 @@ data class Message(
                 role = o.optString("role", "user"),
                 text = o.optString("text", ""),
                 thinking = o.optString("thinking", ""),
+                thinkingSignature = o.optString("thinkingSignature", ""),
                 attachments = (0 until arr.length()).map { Attachment.fromJson(arr.getJSONObject(it)) },
                 createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                 model = if (o.has("model")) o.optString("model") else null,
@@ -163,6 +186,11 @@ data class AppSettings(
     val extraHeaders: String = "",
     val thinking: Boolean = false,
     val thinkingBudget: Int = 2048,
+    /**
+     * Thinking depth for MiniMax: "auto", "low", "medium", "high", "xhigh" or
+     * "max". Other providers ignore it.
+     */
+    val reasoningEffort: String = MiniMaxSupport.EFFORT_AUTO,
     val sendOnEnter: Boolean = false,
     /** Read the assistant's replies out loud in live voice mode. */
     val speakReplies: Boolean = true,

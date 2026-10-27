@@ -127,19 +127,35 @@ object OpenAiClient {
         useServerSearch: Boolean = false,
     ): JSONObject {
         val body = JSONObject()
+        val miniMax = MiniMaxSupport.isMiniMax(settings.model)
         body.put("model", settings.model)
         body.put("stream", stream)
-        body.put("max_tokens", maxOf(settings.maxTokens, 1))
-        body.put("temperature", settings.temperature.toDouble())
-        body.put("top_p", settings.topP.toDouble())
+        if (miniMax) {
+            // Thinking tokens count against the limit, and MiniMax asks new
+            // integrations to use max_completion_tokens.
+            body.put("max_completion_tokens", MiniMaxSupport.effectiveMaxTokens(settings))
+        } else {
+            body.put("max_tokens", maxOf(settings.maxTokens, 1))
+            body.put("temperature", settings.temperature.toDouble())
+            body.put("top_p", settings.topP.toDouble())
+        }
+        if (miniMax) {
+            MiniMaxSupport.thinkingParam(settings)?.let { body.put("thinking", it) }
+            val effort = MiniMaxSupport.effortValue(settings.reasoningEffort)
+            if (effort != null && MiniMaxSupport.supportsEffort(settings.model)) {
+                body.put("reasoning_effort", effort)
+            }
+        }
         val messages = JSONArray()
-        if (settings.systemPrompt.isNotBlank()) {
-            messages.put(JSONObject().put("role", "system").put("content", settings.systemPrompt))
+        val systemPrompt = MiniMaxSupport.systemPromptFor(settings, tools.isNotEmpty())
+        if (systemPrompt.isNotBlank()) {
+            messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
         }
         chat.messages.filter { it.role == "user" || it.role == "assistant" }
             .filter {
                 it.text.isNotBlank() || it.attachments.isNotEmpty() ||
-                    it.toolCalls.isNotEmpty() || it.toolResults.isNotEmpty()
+                    it.toolCalls.isNotEmpty() || it.toolResults.isNotEmpty() ||
+                    (it.role == "assistant" && it.thinking.isNotBlank())
             }
             .forEach { m ->
                 // Tool results travel as their own "tool" messages.
@@ -178,6 +194,13 @@ object OpenAiClient {
                     obj.put("content", parts.getJSONObject(0).optString("text"))
                 } else {
                     obj.put("content", parts)
+                }
+                // MiniMax needs the reasoning of the previous turn back to
+                // keep the chain of thought uninterrupted.
+                if (miniMax && MiniMaxSupport.thinkingActive(settings) &&
+                    m.role == "assistant" && m.thinking.isNotBlank()
+                ) {
+                    obj.put("reasoning_content", m.thinking)
                 }
                 messages.put(obj)
             }

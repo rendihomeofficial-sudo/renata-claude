@@ -56,7 +56,8 @@ object ToolRegistry {
     fun specs(): List<ToolSpec> = listOf(
         ToolSpec(
             name = NAME_DATETIME,
-            description = "Ambil tanggal dan jam saat ini, termasuk zona waktu yang dipilih.",
+            description = "Ambil tanggal dan jam saat ini, termasuk zona waktu yang dipilih. " +
+                "Pakai alat ini setiap kali jawaban bergantung pada waktu sekarang, jangan menebak tanggal.",
             inputSchema = JSONObject()
                 .put("type", "object")
                 .put(
@@ -72,7 +73,8 @@ object ToolRegistry {
         ),
         ToolSpec(
             name = NAME_CALCULATE,
-            description = "Hitung nilai sebuah ekspresi aritmetika, contoh (12 + 8) * 3.5.",
+            description = "Hitung nilai sebuah ekspresi aritmetika, contoh (12 + 8) * 3.5. " +
+                "Pakai alat ini untuk setiap perhitungan angka, hasilnya selalu lebih bisa dipercaya daripada hitungan manual.",
             inputSchema = JSONObject()
                 .put("type", "object")
                 .put(
@@ -89,7 +91,8 @@ object ToolRegistry {
         ),
         ToolSpec(
             name = NAME_FETCH_URL,
-            description = "Ambil isi teks sebuah halaman web dan kirimkan sebagai bacaan.",
+            description = "Ambil isi teks sebuah halaman web dan kirimkan sebagai bacaan. " +
+                "Pakai alat ini untuk membaca sumber yang diberikan pengguna atau memeriksa isi sebuah tautan.",
             inputSchema = JSONObject()
                 .put("type", "object")
                 .put(

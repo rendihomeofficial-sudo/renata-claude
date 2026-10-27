@@ -278,6 +278,99 @@ class ProviderBodyTest {
         assertEquals("halo", messages.getJSONObject(0).getString("content"))
     }
 
+    // --- MiniMax ----------------------------------------------------------
+
+    private fun miniMaxSettings(
+        model: String = "MiniMax-M3.1-Flash",
+        format: String = Providers.FORMAT_OPENAI,
+        thinking: Boolean = true,
+        effort: String = "high",
+    ) = AppSettings(
+        baseUrl = "https://api.minimax.io",
+        apiKey = "kunci",
+        model = model,
+        apiFormat = format,
+        thinking = thinking,
+        reasoningEffort = effort,
+        maxTokens = 1024,
+    )
+
+    @Test
+    fun miniMaxOpenAiBodyUsesTheMiniMaxParameters() {
+        val body = OpenAiClient.buildBody(
+            chat = chatWith(Message(role = "user", text = "halo")),
+            settings = miniMaxSettings(),
+            stream = true,
+            tools = listOf(tool),
+        )
+        assertTrue(body.getInt("max_completion_tokens") >= 8192)
+        assertFalse("MiniMax menolak sampling", body.has("temperature"))
+        assertFalse(body.has("top_p"))
+        assertEquals("adaptive", body.getJSONObject("thinking").getString("type"))
+        assertEquals("high", body.getString("reasoning_effort"))
+        val system = body.getJSONArray("messages").getJSONObject(0)
+        assertEquals("system", system.getString("role"))
+        assertTrue(system.getString("content").contains("asisten AI profesional"))
+    }
+
+    @Test
+    fun miniMaxOpenAiBodyKeepsTheReasoningOfThePreviousTurn() {
+        val body = OpenAiClient.buildBody(
+            chat = chatWith(
+                Message(role = "user", text = "berapa 2+2?"),
+                Message(
+                    role = "assistant",
+                    text = "",
+                    thinking = "langkah berpikir",
+                    toolCalls = listOf(ToolCall("call_1", ToolRegistry.NAME_CALCULATE, "{}")),
+                ),
+            ),
+            settings = miniMaxSettings(),
+            stream = true,
+            tools = listOf(tool),
+        )
+        val messages = body.getJSONArray("messages")
+        val assistant = messages.getJSONObject(messages.length() - 1)
+        assertEquals("langkah berpikir", assistant.getString("reasoning_content"))
+        assertEquals(1, assistant.getJSONArray("tool_calls").length())
+    }
+
+    @Test
+    fun miniMaxOpenAiBodySwitchesTheThinkingOffForM3() {
+        val body = OpenAiClient.buildBody(
+            chat = chatWith(Message(role = "user", text = "halo")),
+            settings = miniMaxSettings(model = "MiniMax-M3", thinking = false),
+            stream = true,
+        )
+        assertEquals("disabled", body.getJSONObject("thinking").getString("type"))
+        assertFalse(body.has("reasoning_effort"))
+    }
+
+    @Test
+    fun miniMaxAnthropicBodyUsesTheOutputConfigEffort() {
+        val body = AnthropicClient.buildBody(
+            chat = chatWith(
+                Message(role = "user", text = "berapa 2+2?"),
+                Message(
+                    role = "assistant",
+                    text = "",
+                    thinking = "langkah berpikir",
+                    toolCalls = listOf(ToolCall("toolu_1", ToolRegistry.NAME_CALCULATE, "{}")),
+                ),
+            ),
+            settings = miniMaxSettings(format = Providers.FORMAT_ANTHROPIC),
+            stream = true,
+            tools = listOf(tool),
+        )
+        assertEquals("high", body.getJSONObject("output_config").getString("effort"))
+        assertEquals("adaptive", body.getJSONObject("thinking").getString("type"))
+        assertTrue(body.getInt("max_tokens") >= 8192)
+        val blocks = body.getJSONArray("messages").getJSONObject(1).getJSONArray("content")
+        assertEquals("thinking", blocks.getJSONObject(0).getString("type"))
+        assertEquals("langkah berpikir", blocks.getJSONObject(0).getString("thinking"))
+        assertEquals("tool_use", blocks.getJSONObject(1).getString("type"))
+    }
+
     @Test
     fun toolSpecConvertsToBothFormats() {
         assertEquals("calculate", tool.toAnthropicJson().getString("name"))

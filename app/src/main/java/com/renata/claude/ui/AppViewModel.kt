@@ -256,6 +256,8 @@ class AppViewModel : ViewModel() {
                                     updateLastAssistant { it.copy(text = it.text + delta.text) }
                                 is StreamDelta.Thinking ->
                                     updateLastAssistant { it.copy(thinking = it.thinking + delta.text) }
+                                is StreamDelta.ThinkingSignature ->
+                                    updateLastAssistant { it.withSignature(delta.signature) }
                                 is StreamDelta.Status ->
                                     updateLastAssistant { it.copy(stopReason = delta.stopReason) }
                                 is StreamDelta.ToolCall ->
@@ -270,6 +272,10 @@ class AppViewModel : ViewModel() {
                     val toolCalls = calls.values.toList()
                     val citations = sources.values.toList()
                     updateLastAssistant { it.copy(toolCalls = toolCalls, citations = citations) }
+                    // Take over the turn that was really rendered: the next
+                    // request has to carry the answer text, the reasoning and
+                    // the tool calls of this turn.
+                    _currentChat.value?.let { working = it }
                     if (toolCalls.isEmpty() || tools.isEmpty()) break
 
                     // The model asked for a tool: run it and send the result back.

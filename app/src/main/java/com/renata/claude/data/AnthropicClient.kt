@@ -13,6 +13,10 @@ import java.util.concurrent.TimeUnit
 sealed class StreamDelta {
     data class Text(val text: String) : StreamDelta()
     data class Thinking(val text: String) : StreamDelta()
+
+    /** The signature of a thinking block, needed to send the chain back. */
+    data class ThinkingSignature(val signature: String) : StreamDelta()
+
     data class Status(val stopReason: String?) : StreamDelta()
 
     /** The model asked for a tool. [arguments] grows while the block streams. */
@@ -95,8 +99,19 @@ object AnthropicClient {
         return builder
     }
 
-    private fun contentBlocks(message: Message): JSONArray {
+    private fun contentBlocks(message: Message, keepThinking: Boolean): JSONArray {
         val blocks = JSONArray()
+        // The thinking block has to come first in an assistant turn, otherwise
+        // the provider rejects the request.
+        if (keepThinking && message.thinking.isNotBlank()) {
+            val block = JSONObject()
+                .put("type", "thinking")
+                .put("thinking", message.thinking)
+            if (message.thinkingSignature.isNotBlank()) {
+                block.put("signature", message.thinkingSignature)
+            }
+            blocks.put(block)
+        }
         if (message.text.isNotBlank()) {
             blocks.put(JSONObject().put("type", "text").put("text", message.text))
         }
@@ -166,15 +181,35 @@ object AnthropicClient {
         useServerSearch: Boolean = false,
     ): JSONObject {
         val body = JSONObject()
+        val miniMax = MiniMaxSupport.isMiniMax(settings.model)
         body.put("model", settings.model)
-        body.put("max_tokens", maxOf(settings.maxTokens, if (settings.thinking) settings.thinkingBudget + 1024 else 1))
-        body.put("temperature", if (settings.thinking) 1.0 else settings.temperature.toDouble())
-        body.put("top_p", settings.topP.toDouble())
-        body.put("stream", stream)
-        if (settings.systemPrompt.isNotBlank()) {
-            body.put("system", settings.systemPrompt)
+        body.put(
+            "max_tokens",
+            if (miniMax) {
+                MiniMaxSupport.effectiveMaxTokens(settings)
+            } else {
+                maxOf(settings.maxTokens, if (settings.thinking) settings.thinkingBudget + 1024 else 1)
+            }
+        )
+        if (!miniMax) {
+            // MiniMax ignores both values anyway.
+            body.put("temperature", if (settings.thinking) 1.0 else settings.temperature.toDouble())
+            body.put("top_p", settings.topP.toDouble())
         }
-        if (settings.thinking) {
+        body.put("stream", stream)
+        val systemPrompt = MiniMaxSupport.systemPromptFor(settings, tools.isNotEmpty())
+        if (systemPrompt.isNotBlank()) {
+            body.put("system", systemPrompt)
+        }
+        if (miniMax) {
+            // MiniMax-M3.1-Flash rejects `disabled`, so the thinking parameter
+            // is decided per model family.
+            MiniMaxSupport.thinkingParam(settings)?.let { body.put("thinking", it) }
+            val effort = MiniMaxSupport.effortValue(settings.reasoningEffort)
+            if (effort != null && MiniMaxSupport.supportsEffort(settings.model)) {
+                body.put("output_config", JSONObject().put("effort", effort))
+            }
+        } else if (settings.thinking) {
             body.put(
                 "thinking",
                 JSONObject().put("type", "enabled").put("budget_tokens", settings.thinkingBudget)
@@ -190,18 +225,28 @@ object AnthropicClient {
                     .put("max_uses", 5)
             )
         }
-        if (toolList.length() > 0) body.put("tools", toolList)
+        if (toolList.length() > 0) {
+            body.put("tools", toolList)
+            body.put("tool_choice", JSONObject().put("type", "auto"))
+        }
+        // The reasoning chain is only sent back when it can be sent back
+        // safely: MiniMax does not need a signature, the Anthropic API does.
         val messages = JSONArray()
         chat.messages.filter { it.role == "user" || it.role == "assistant" }
             .filter {
                 it.text.isNotBlank() || it.attachments.isNotEmpty() ||
-                    it.toolCalls.isNotEmpty() || it.toolResults.isNotEmpty()
+                    it.toolCalls.isNotEmpty() || it.toolResults.isNotEmpty() ||
+                    (it.role == "assistant" && it.thinking.isNotBlank())
             }
             .forEach { m ->
                 val obj = JSONObject().put("role", m.role)
-                val blocks = contentBlocks(m)
+                val keepThinking = m.role == "assistant" &&
+                    ((miniMax && MiniMaxSupport.thinkingActive(settings)) ||
+                        m.thinkingSignature.isNotBlank())
+                val blocks = contentBlocks(m, keepThinking)
                 if (blocks.length() == 1 && m.attachments.isEmpty() &&
-                    m.toolCalls.isEmpty() && m.toolResults.isEmpty()
+                    m.toolCalls.isEmpty() && m.toolResults.isEmpty() &&
+                    m.thinking.isBlank()
                 ) {
                     obj.put("content", m.text)
                 } else {
@@ -296,6 +341,14 @@ object AnthropicClient {
                 val block = obj.optJSONObject("content_block") ?: return
                 val index = obj.optInt("index", 0)
                 when (block.optString("type")) {
+                    "thinking" -> {
+                        val signature = block.optString("signature")
+                        if (signature.isNotBlank()) {
+                            onDelta(StreamDelta.ThinkingSignature(signature))
+                        }
+                        val initial = block.optString("thinking")
+                        if (initial.isNotBlank()) onDelta(StreamDelta.Thinking(initial))
+                    }
                     "tool_use" -> {
                         val id = block.optString("id")
                         val name = block.optString("name")
@@ -339,6 +392,12 @@ object AnthropicClient {
                 when (delta.optString("type")) {
                     "text_delta" -> onDelta(StreamDelta.Text(delta.optString("text")))
                     "thinking_delta" -> onDelta(StreamDelta.Thinking(delta.optString("thinking")))
+                    "signature_delta" -> {
+                        val signature = delta.optString("signature")
+                        if (signature.isNotBlank()) {
+                            onDelta(StreamDelta.ThinkingSignature(signature))
+                        }
+                    }
                     "input_json_delta" -> {
                         val index = obj.optInt("index", 0)
                         toolState.append(index, delta.optString("partial_json"))?.let { onDelta(it) }

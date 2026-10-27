@@ -46,6 +46,8 @@ object SettingsStore {
             extraHeaders = d.getString("extraHeaders", "") ?: "",
             thinking = d.getBoolean("thinking", false),
             thinkingBudget = d.getInt("thinkingBudget", 2048),
+            reasoningEffort = d.getString("reasoningEffort", MiniMaxSupport.EFFORT_AUTO)
+                ?: MiniMaxSupport.EFFORT_AUTO,
             sendOnEnter = d.getBoolean("sendOnEnter", false),
             speakReplies = d.getBoolean("speakReplies", true),
             voiceLanguage = d.getString("voiceLanguage", "") ?: "",
@@ -75,6 +77,7 @@ object SettingsStore {
             .putString("extraHeaders", s.extraHeaders)
             .putBoolean("thinking", s.thinking)
             .putInt("thinkingBudget", s.thinkingBudget)
+            .putString("reasoningEffort", s.reasoningEffort)
             .putBoolean("sendOnEnter", s.sendOnEnter)
             .putBoolean("speakReplies", s.speakReplies)
             .putString("voiceLanguage", s.voiceLanguage)

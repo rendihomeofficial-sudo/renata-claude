@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.renata.claude.data.AiClient
 import com.renata.claude.data.AppSettings
 import com.renata.claude.data.LockPrefs
+import com.renata.claude.data.MiniMaxSupport
 import com.renata.claude.data.Providers
 import kotlinx.coroutines.launch
 
@@ -235,9 +236,14 @@ fun SettingsScreen(
                     .height(140.dp),
             )
             Spacer(Modifier.height(8.dp))
+            val miniMaxModel = MiniMaxSupport.isMiniMax(settings.model)
             ToggleRow(
                 title = "Pemikiran panjang",
-                subtitle = "Model berpikir dulu sebelum menjawab",
+                subtitle = if (miniMaxModel) {
+                    "Model MiniMax memutuskan sendiri apakah berpikir"
+                } else {
+                    "Model berpikir dulu sebelum menjawab"
+                },
                 checked = settings.thinking,
                 onCheckedChange = { value -> onChange { it.copy(thinking = value) } },
             )
@@ -254,6 +260,44 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
+            }
+
+            if (miniMaxModel) {
+                SectionTitle("MiniMax")
+                Text(
+                    text = "MiniMax memakai parameter sendiri: Temperature dan Top P diabaikan, " +
+                        "dan kedalaman berpikir diatur terpisah di bawah.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (MiniMaxSupport.supportsEffort(settings.model)) {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Kedalaman berpikir", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(4.dp))
+                    MiniMaxSupport.effortLevels.forEach { level ->
+                        FilterChip(
+                            selected = settings.reasoningEffort == level,
+                            onClick = { onChange { it.copy(reasoningEffort = level) } },
+                            label = { Text(MiniMaxSupport.effortLabels[level] ?: level) },
+                            modifier = Modifier.padding(vertical = 2.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Semakin dalam, semakin teliti dan semakin lama jawabannya. " +
+                            "MiniMax memakai \"maksimal\" kalau pilihannya dibiarkan otomatis.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (MiniMaxSupport.alwaysThinks(settings.model)) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "Model ini selalu berpikir, jadi sakelar \"Pemikiran panjang\" tidak mengubah apa pun.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             SectionTitle("Sampling")
@@ -275,6 +319,14 @@ fun SettingsScreen(
                 range = 0f..1f,
                 onValueChange = { value -> onChange { it.copy(topP = value) } },
             )
+            if (miniMaxModel) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "MiniMax mengabaikan Temperature dan Top P, jadi kedua slider ini tidak berpengaruh untuk model MiniMax.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             SectionTitle("Tampilan & perilaku")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
